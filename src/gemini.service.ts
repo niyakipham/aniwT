@@ -1,4 +1,4 @@
-import { Injectable, signal } from '@angular/core';
+import { Injectable } from '@angular/core';
 import { GenerateContentResponse, GoogleGenAI, HarmBlockThreshold, HarmCategory } from '@google/genai';
 import { TranslationMode } from './app.component';
 
@@ -12,18 +12,19 @@ export interface TranslationResult {
 })
 export class GeminiService {
   private genAI: GoogleGenAI | null = null;
-  public apiKeySignal = signal<string>('');
   
   constructor() {
     // CRITICAL: The API key is sourced from the environment as per unbreakable rules.
-    // The UI input is for user experience simulation only.
     const apiKey = process.env.API_KEY;
     if (apiKey) {
       this.genAI = new GoogleGenAI({ apiKey });
-      this.apiKeySignal.set('******'); // Indicate that key is loaded
     } else {
       console.error("API_KEY environment variable not set.");
     }
+  }
+
+  isInitialized(): boolean {
+    return this.genAI !== null;
   }
 
   private async fileToGenerativePart(file: File): Promise<{ inlineData: { data: string; mimeType: string; }; }> {
