@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy, signal, inject, effect } from '@angular/core';
+import { Component, ChangeDetectionStrategy, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { GeminiService } from './gemini.service';
 
@@ -39,30 +39,13 @@ export class AppComponent {
   
   wikiUrl = signal<string>('');
   translationMode = signal<TranslationMode>('in-depth');
-  
-  isApiKeyModalVisible = signal<boolean>(true);
-  apiKeyInput = signal<string>('');
 
   errorMessage = signal<string>('');
   isDragging = signal(false);
 
   constructor() {
-    effect(() => {
-        if (this.geminiService.apiKeySignal()) {
-            this.isApiKeyModalVisible.set(false);
-        }
-    });
-
     if (typeof pdfjsLib !== 'undefined') {
       pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
-    }
-  }
-
-  saveApiKey() {
-    if (this.apiKeyInput().trim()) {
-      this.isApiKeyModalVisible.set(false);
-    } else {
-      this.errorMessage.set('Please enter a key to proceed.');
     }
   }
 
@@ -227,10 +210,9 @@ export class AppComponent {
       this.errorMessage.set('Please provide a Wikipedia or Fandom URL for context.');
       return;
     }
-    if (!this.geminiService.apiKeySignal()) {
+    if (!this.geminiService.isInitialized()) {
       this.status.set('error');
       this.errorMessage.set('API Key is not configured. Cannot translate.');
-      this.isApiKeyModalVisible.set(true);
       return;
     }
 
