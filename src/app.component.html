@@ -1,0 +1,202 @@
+<div class="min-h-screen w-full flex flex-col items-center justify-center p-4 bg-pink-100 font-sans relative overflow-hidden">
+  
+  <!-- Background decorative elements -->
+  <div class="absolute top-0 left-0 w-full h-full opacity-30">
+    <div class="absolute top-10 left-20 w-48 h-48 bg-green-200 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob"></div>
+    <div class="absolute top-20 right-20 w-72 h-72 bg-pink-300 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-2000"></div>
+    <div class="absolute bottom-20 left-40 w-60 h-60 bg-green-300 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-4000"></div>
+  </div>
+  
+  <!-- API Key Modal -->
+  @if (isApiKeyModalVisible()) {
+    <div class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center">
+      <div class="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md mx-4 transform transition-all animate-in fade-in-0 zoom-in-95">
+        <h2 class="text-2xl font-bold text-gray-800 mb-2">Welcome Hoàng!</h2>
+        <p class="text-gray-600 mb-6">To start translating, please provide your Gemini API Key.</p>
+        <div class="space-y-4">
+          <input 
+            type="password"
+            [value]="apiKeyInput()"
+            (input)="apiKeyInput.set($event.target.value)"
+            placeholder="Enter your API Key here..."
+            class="w-full px-4 py-3 bg-gray-100 rounded-lg border-2 border-transparent focus:border-pink-400 focus:ring-pink-400 focus:outline-none transition"
+          />
+          <button 
+            (click)="saveApiKey()"
+            class="w-full bg-pink-500 text-white font-bold py-3 px-4 rounded-lg hover:bg-pink-600 transition-transform transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:ring-opacity-50">
+            Save & Start
+          </button>
+        </div>
+        @if(errorMessage()){
+            <p class="text-red-500 text-sm mt-4 text-center">{{ errorMessage() }}</p>
+        }
+        <p class="text-xs text-gray-400 mt-4 text-center">Your key is used to communicate with the Gemini API and is not stored.</p>
+      </div>
+    </div>
+  }
+
+  <main class="w-full max-w-7xl bg-white/70 backdrop-blur-xl rounded-2xl shadow-2xl z-10 transition-all duration-500" [class.opacity-20]="isApiKeyModalVisible()">
+    <div class="p-8">
+      <header class="text-center mb-8 border-b-2 border-pink-200 pb-6">
+        <h1 class="text-4xl font-extrabold tracking-tight text-gray-800">
+          AniW <span class="text-pink-500">Manga Translator</span> AI
+        </h1>
+        <p class="mt-2 text-gray-500">Upload your <code class="bg-pink-200 text-pink-700 px-2 py-1 rounded">.cbz</code> or <code class="bg-blue-200 text-blue-700 px-2 py-1 rounded">.pdf</code> file and let Gemini do the magic!</p>
+      </header>
+
+      @if (status() === 'error') {
+        <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded-lg mb-6" role="alert">
+          <p class="font-bold">Oops! Something went wrong.</p>
+          <p>{{ errorMessage() }}</p>
+        </div>
+      }
+
+      <!-- Main Interaction Area -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+
+        <!-- Left Side: Upload & Info -->
+        <div class="flex flex-col space-y-6">
+          <div 
+            (dragover)="onDragOver($event)"
+            (dragleave)="onDragLeave($event)"
+            (drop)="onDrop($event)"
+            class="relative w-full h-64 border-4 border-dashed rounded-xl transition-all duration-300 flex flex-col items-center justify-center text-center cursor-pointer"
+            [class.border-pink-400]="isDragging()"
+            [class.border-gray-300]="!isDragging()"
+            [class.bg-pink-50]="isDragging()"
+            (click)="fileInput.click()">
+            <input type="file" #fileInput (change)="onFileSelected($event)" accept=".cbz,.pdf" class="hidden" />
+
+            @if (status() === 'loading-file') {
+              <div class="text-pink-600 font-bold p-4">
+                <svg class="animate-spin mx-auto h-16 w-16" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <p class="mt-2 text-lg">Processing file...</p>
+              </div>
+            } @else if (!uploadedFile()) {
+              <div class="text-gray-500">
+                <svg class="mx-auto h-16 w-16 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true"><path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+                <p class="mt-2 font-semibold">Drop a <code class="bg-green-200 text-green-800 px-1 rounded">.cbz</code> or <code class="bg-blue-200 text-blue-800 px-1 rounded">.pdf</code> file here</p>
+                <p class="text-sm">or click to select</p>
+              </div>
+            } @else {
+              <div class="text-pink-600 font-bold p-4">
+                <svg xmlns="http://www.w3.org/2000/svg" class="mx-auto h-16 w-16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+                <p class="mt-2 text-lg">{{ fileName() }}</p>
+                <p class="text-sm font-normal">{{ totalPageCount() }} pages loaded!</p>
+              </div>
+            }
+          </div>
+
+          <div class="flex flex-col">
+            <label for="wiki-url" class="mb-2 font-semibold text-gray-700">Wikipedia / Fandom URL for Context</label>
+            <input 
+              id="wiki-url"
+              type="text"
+              [value]="wikiUrl()"
+              (input)="wikiUrl.set($event.target.value)"
+              placeholder="e.g., en.wikipedia.org or my-manga.fandom.com"
+              class="w-full px-4 py-3 bg-white border-2 border-gray-300 rounded-lg focus:border-green-400 focus:ring-green-400 focus:outline-none transition"
+            />
+          </div>
+          
+          <div class="flex flex-col">
+            <label class="mb-2 font-semibold text-gray-700">Translation Mode</label>
+            <div class="grid grid-cols-2 gap-2 rounded-lg bg-gray-200 p-1">
+              <div>
+                <input type="radio" id="mode-short" name="translation-mode" value="short" class="peer hidden" [checked]="translationMode() === 'short'" (change)="translationMode.set('short')">
+                <label for="mode-short" class="block cursor-pointer select-none rounded-lg p-2 text-center text-sm font-medium peer-checked:bg-pink-500 peer-checked:text-white transition-colors">Dịch ngắn</label>
+              </div>
+              <div>
+                <input type="radio" id="mode-full" name="translation-mode" value="full" class="peer hidden" [checked]="translationMode() === 'full'" (change)="translationMode.set('full')">
+                <label for="mode-full" class="block cursor-pointer select-none rounded-lg p-2 text-center text-sm font-medium peer-checked:bg-pink-500 peer-checked:text-white transition-colors">Dịch Full</label>
+              </div>
+              <div>
+                <input type="radio" id="mode-bold" name="translation-mode" value="bold" class="peer hidden" [checked]="translationMode() === 'bold'" (change)="translationMode.set('bold')">
+                <label for="mode-bold" class="block cursor-pointer select-none rounded-lg p-2 text-center text-sm font-medium peer-checked:bg-pink-500 peer-checked:text-white transition-colors">Dịch táo bạo</label>
+              </div>
+              <div>
+                <input type="radio" id="mode-in-depth" name="translation-mode" value="in-depth" class="peer hidden" [checked]="translationMode() === 'in-depth'" (change)="translationMode.set('in-depth')">
+                <label for="mode-in-depth" class="block cursor-pointer select-none rounded-lg p-2 text-center text-sm font-medium peer-checked:bg-pink-500 peer-checked:text-white transition-colors">Dịch chuyên sâu</label>
+              </div>
+            </div>
+          </div>
+
+          <button
+            (click)="translateAll()"
+            [disabled]="status() === 'translating' || pages().length === 0 || !wikiUrl()"
+            class="w-full bg-green-500 text-white font-bold py-4 px-4 rounded-lg hover:bg-green-600 transition-transform transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50 disabled:bg-gray-400 disabled:cursor-not-allowed disabled:scale-100 flex items-center justify-center space-x-2">
+            @if (status() === 'translating') {
+              <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              <span>Translating... ({{ translatedPageCount() }}/{{ totalPageCount() }})</span>
+            } @else {
+              <span>✨ Translate All {{ totalPageCount() > 0 ? '(' + totalPageCount() + ')' : '' }} Pages</span>
+            }
+          </button>
+          
+           @if (status() !== 'idle' && status() !== 'loading-file') {
+                <button (click)="reset()" class="w-full text-center text-sm text-pink-500 hover:underline mt-2">Start Over</button>
+            }
+        </div>
+
+        <!-- Right Side: Preview & Result -->
+        <div class="flex flex-col space-y-6">
+          <div class="bg-gray-100 rounded-xl p-4 min-h-[500px] max-h-[60vh] overflow-y-auto flex flex-col space-y-4">
+            @if (pages().length > 0) {
+              @for (page of pages(); track page.pageNum) {
+                <div class="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-4 p-3 bg-white rounded-lg shadow-sm border border-gray-200">
+                  <img [src]="page.previewUrl" alt="Page {{page.pageNum}} preview" class="w-full sm:w-28 h-auto object-contain rounded-md" />
+                  <div class="flex-1">
+                    <h3 class="font-bold text-gray-700">Page {{ page.pageNum }}</h3>
+                    <div class="bg-gray-800 text-white rounded-md p-3 mt-2 font-mono text-xs overflow-x-auto">
+                      @if (page.isTranslating) {
+                        <p class="text-gray-400 animate-pulse">Translating...</p>
+                      } @else if (page.translation) {
+                        @for(line of page.translation; track $index) {
+                          <p [class.text-green-300]="line.startsWith('Vietnamese:')" 
+                             [class.text-gray-300]="line.startsWith('English:')" 
+                             [class.pt-2]="line.startsWith('English:') && $index > 0">{{ line }}</p>
+                        }
+                      } @else if (page.error) {
+                        <p class="text-red-400">Error: {{ page.error }}</p>
+                      }
+                      @else {
+                        <p class="text-gray-500">// Pending translation...</p>
+                      }
+                    </div>
+                  </div>
+                </div>
+              }
+            } @else {
+              <div class="flex-1 flex items-center justify-center">
+                 <p class="text-gray-400">Page previews will appear here</p>
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+<style>
+  .animate-blob {
+    animation: blob 7s infinite;
+  }
+  .animation-delay-2000 {
+    animation-delay: 2s;
+  }
+  .animation-delay-4000 {
+    animation-delay: 4s;
+  }
+  @keyframes blob {
+    0% { transform: translate(0px, 0px) scale(1); }
+    33% { transform: translate(30px, -50px) scale(1.1); }
+    66% { transform: translate(-20px, 20px) scale(0.9); }
+    100% { transform: translate(0px, 0px) scale(1); }
+  }
+</style>

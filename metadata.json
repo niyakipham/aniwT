@@ -1,0 +1,5 @@
+{
+  "name": "Copy of Manga Translator AI",
+  "description": "An AI-powered tool to translate English manga and comics (.cbz files) into Vietnamese, using Gemini to understand context and character tones for accurate and natural translations.",
+  "requestFramePermissions": []
+}
